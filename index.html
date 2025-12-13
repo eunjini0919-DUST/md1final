@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <link rel="stylesheet" href="./src/style.css">
+    <title>작은 쉼터</title>
+    <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./src/style.css" />
+</head>
+
+<body>
+    <div id="app">
+        <div id="queue-screen" class="screen">
+            <div class="card">
+                <h1>잠시 멈춤</h1>
+                <div class="status-box">
+                    <p id="queue-msg" class="gentle-text">
+                        똑똑, 안에 누군가 머물고 있어요.<br>
+                        조금만 기다리면 문이 열립니다.
+                    </p>
+                    <p id="timer-display" style="display:none; margin-top:20px;">
+                        남은 휴식 시간: <span id="time-left" class="highlight">00:00</span>
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div id="room-screen" class="screen hidden">
+            <div class="room-container">
+                <header class="room-header">
+                    <span class="room-title">나만의 다락방 🛖</span>
+                    <div class="header-controls">
+                        <span id="my-timer">05:00</span>
+                        <button id="leave-btn" class="soft-btn">문 닫고 나가기</button>
+                    </div>
+                </header>
+
+                <div class="canvas-wrapper">
+                    <canvas id="drawing-board"></canvas>
+                    <p class="guide-text">이곳은 당신만의 종이입니다. 마음껏 끄적여보세요.</p>
+                </div>
+
+                <div class="message-area">
+                    <div id="msg-log">
+                        <div class="msg-item system">따뜻한 차 한 잔 마시며 쉬어가세요.</div>
+                    </div>
+                    <div class="input-wrapper">
+                        <input type="text" id="msg-input" placeholder="다음 사람에게 남길 따뜻한 한마디..." autocomplete="off">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="./src/main.js"></script>
+</body>
+
+</html>
