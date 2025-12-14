@@ -12,6 +12,7 @@
 
 <body>
     <div id="app">
+
         <div id="queue-screen" class="screen">
             <div class="card">
                 <h1>잠시 멈춤</h1>
@@ -20,8 +21,16 @@
                         똑똑, 안에 누군가 머물고 있어요.<br>
                         조금만 기다리면 문이 열립니다.
                     </p>
-                    <p id="timer-display" style="display:none; margin-top:20px;">
-                        남은 휴식 시간: <span id="time-left" class="highlight">00:00</span>
+
+                    <div class="queue-info"
+                        style="margin-top: 25px; border-top: 1px dashed #ddd; padding-top: 15px; text-align: left; font-size: 0.95rem;">
+                        <p style="margin: 5px 0;">📋 내 대기 순서: <span id="my-rank" class="highlight">-</span> 번째</p>
+                        <p style="margin: 5px 0;">⏳ 앞사람 이용 시간: <span id="current-user-time" class="highlight">계산
+                                중...</span></p>
+                    </div>
+
+                    <p id="timer-display" style="display:none; margin-top:15px; font-size: 0.8rem; color: #999;">
+                        (최대 대기 가능 시간: <span id="time-left">00:00</span>)
                     </p>
                 </div>
             </div>
@@ -47,11 +56,13 @@
                         <div class="msg-item system">따뜻한 차 한 잔 마시며 쉬어가세요.</div>
                     </div>
                     <div class="input-wrapper">
-                        <input type="text" id="msg-input" placeholder="다음 사람에게 남길 따뜻한 한마디..." autocomplete="off">
+                        <input type="text" id="msg-input" placeholder="다음 사람에게 남길 따뜻한 한마디... (Enter)"
+                            autocomplete="off">
                     </div>
                 </div>
             </div>
         </div>
+
     </div>
 
     <script type="module" src="./src/main.js"></script>
