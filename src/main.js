@@ -7,7 +7,7 @@ import {
     setDoc,
     deleteDoc,
     addDoc,
-    getDoc, // [추가됨] 데이터를 한번만 읽어오는 함수
+    getDoc,
     collection,
     query,
     orderBy,
@@ -15,7 +15,9 @@ import {
     serverTimestamp
 } from "firebase/firestore";
 
-// 1. Firebase 설정 (본인의 키값 유지!)
+// ========================================================
+// ▼▼▼ 본인의 Firebase 키값으로 꼭 교체해주세요 ▼▼▼
+// ========================================================
 const firebaseConfig = {
     apiKey: "AIzaSyAGopha4Zy2S9IHliTlFPEEprIyNFC8bsE",
     authDomain: "md1websiteproject.firebaseapp.com",
@@ -25,6 +27,7 @@ const firebaseConfig = {
     appId: "1:427011802078:web:920abac32165c01b62934f",
     measurementId: "G-CTT7KM6CEF"
 };
+// ========================================================
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
@@ -34,7 +37,8 @@ const MY_ID = 'guest_' + Math.random().toString(36).substr(2, 9);
 console.log("나의 ID:", MY_ID);
 
 let amIInside = false;
-let myTimerInterval;
+let myTimerInterval;      // 남은 시간(5분) 카운트다운
+let heartbeatInterval;    // [NEW] 생존 신호 보내기 타이머
 let otherUserTimerInterval;
 let queueUnsubscribe = null;
 
@@ -59,32 +63,59 @@ msgInput.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') sendMessage();
 });
 window.addEventListener('resize', resizeCanvas);
+
+// [중요] 창 닫을 때 최대한 빨리 "나 나감" 처리 시도
 window.addEventListener('beforeunload', () => {
+    if (amIInside) {
+        // 캔버스 저장 시도 (비동기라 보장되진 않음)
+        saveCanvasData();
+        // 방 비우기 (Navigator.sendBeacon 방식이 더 좋지만, Firestore 호환성을 위해 유지)
+        updateDoc(roomRef, { occupant: null, expireAt: null, lastActive: null });
+    }
     removeFromQueue();
 });
 
 
 // ==========================================
-// 2. 방 감시 및 입장 로직
+// 2. 방 감시 및 입장 로직 (심판)
 // ==========================================
 const roomRef = doc(db, "world", "room1");
 const queueColRef = collection(db, "world", "room1", "waiting");
-// [추가됨] 그림 데이터가 저장될 위치
 const canvasRef = doc(db, "world", "canvas_data");
 
 onSnapshot(roomRef, (snapshot) => {
     if (!snapshot.exists()) {
-        setDoc(roomRef, { occupant: null, expireAt: null });
+        setDoc(roomRef, { occupant: null, expireAt: null, lastActive: null });
         return;
     }
 
     const data = snapshot.data();
     const now = Date.now();
-    const expireTimeMillis = data.expireAt ? data.expireAt.toMillis() : 0;
 
-    if (!data.occupant || expireTimeMillis < now) {
-        tryEnterRoom();
-    } else {
+    // 시간 계산
+    const expireTimeMillis = data.expireAt ? data.expireAt.toMillis() : 0;
+    const lastActiveMillis = data.lastActive ? data.lastActive.toMillis() : now;
+
+    // [핵심 로직 변경]
+    // 1. 방에 사람이 없거나 (occupant == null)
+    // 2. 5분 시간이 다 됐거나 (expireTimeMillis < now)
+    // 3. [NEW] 사람이 있는데 10초 이상 신호가 없거나 (잠수/강제종료)
+    const isRoomEmpty = !data.occupant;
+    const isTimeOver = expireTimeMillis < now;
+    const isDead = (now - lastActiveMillis) > 10000; // 10초 딜레이 허용
+
+    if (isRoomEmpty || isTimeOver || isDead) {
+        // 내가 안에 있지 않은 상태라면 입장 시도
+        if (!amIInside) tryEnterRoom();
+
+        // 만약 내가 안에 있는데 시간이 다 된 거라면? (5분 컷)
+        if (amIInside && isTimeOver) {
+            alert("약속된 5분이 지났습니다. 다음 분을 위해 비워주세요.");
+            leaveRoom(false); // confirm 없이 강제 퇴장
+        }
+    }
+    else {
+        // 누군가 정상적으로 사용 중
         if (data.occupant === MY_ID) {
             if (!amIInside) enterRoomMode(data.expireAt);
         } else {
@@ -95,24 +126,26 @@ onSnapshot(roomRef, (snapshot) => {
 
 async function tryEnterRoom() {
     const nextExpire = new Date();
-    nextExpire.setMinutes(nextExpire.getMinutes() + 5);
+    nextExpire.setMinutes(nextExpire.getMinutes() + 5); // 5분 제한
 
     try {
         await updateDoc(roomRef, {
             occupant: MY_ID,
             expireAt: nextExpire,
-            startTime: serverTimestamp()
+            startTime: serverTimestamp(),
+            lastActive: serverTimestamp() // [NEW] 입장 시 생존신호 시작
         });
         await removeFromQueue();
         console.log("방 입장 성공!");
     } catch (e) {
-        console.log("입장 경쟁 실패:", e);
+        // 동시 접속 시도 실패는 자연스러운 현상이므로 로그만 남김
+        // console.log("입장 경쟁:", e);
     }
 }
 
 
 // ==========================================
-// 3. 화면 모드 (입장 시 그림 불러오기 추가)
+// 3. 화면 모드
 // ==========================================
 
 function enterRoomMode(expireTime) {
@@ -120,24 +153,29 @@ function enterRoomMode(expireTime) {
     queueScreen.classList.add('hidden');
     roomScreen.classList.remove('hidden');
 
-    if (queueUnsubscribe) {
-        queueUnsubscribe();
-        queueUnsubscribe = null;
-    }
+    if (queueUnsubscribe) { queueUnsubscribe(); queueUnsubscribe = null; }
     if (otherUserTimerInterval) clearInterval(otherUserTimerInterval);
 
-    // 1. 캔버스 크기 맞추기
     resizeCanvas();
-    // 2. [핵심] 이전 사람들의 흔적(그림) 불러오기
     loadCanvasData();
-
     subscribeMessages();
 
+    // [NEW] 생존 신호 보내기 (3초마다)
+    // 창을 닫으면 이 인터벌이 멈추므로, 10초 뒤 lastActive가 갱신되지 않아 쫓겨남
+    if (heartbeatInterval) clearInterval(heartbeatInterval);
+    heartbeatInterval = setInterval(() => {
+        updateDoc(roomRef, { lastActive: serverTimestamp() }).catch(e => {
+            console.log("신호 전송 실패(아마 쫓겨남)");
+        });
+    }, 3000);
+
+    // 내 화면 타이머 (보여주기용)
     if (myTimerInterval) clearInterval(myTimerInterval);
     myTimerInterval = setInterval(() => {
         const left = expireTime.toMillis() - Date.now();
         if (left <= 0) {
-            leaveRoom();
+            // 여기서 처리 안 해도 onSnapshot에서 처리하지만, UX를 위해 유지
+            document.getElementById('my-timer').innerText = "00:00";
         } else {
             const minutes = Math.floor(left / 1000 / 60);
             const seconds = Math.floor((left / 1000) % 60);
@@ -157,7 +195,7 @@ function showQueueMode(roomData) {
         setDoc(myQueueRef, {
             userId: MY_ID,
             joinedAt: serverTimestamp()
-        }, { merge: true }).then(() => monitorQueue()).catch(e => console.log(e));
+        }, { merge: true }).then(() => monitorQueue()).catch(e => { });
     }
 
     updateOtherUserTime(roomData.startTime);
@@ -169,6 +207,7 @@ function showQueueMode(roomData) {
     }
 }
 
+// 대기열 로직
 function monitorQueue() {
     const q = query(queueColRef, orderBy("joinedAt", "asc"));
     queueUnsubscribe = onSnapshot(q, (snapshot) => {
@@ -177,9 +216,7 @@ function monitorQueue() {
         const myIndex = waitingList.indexOf(MY_ID);
         myRankDisplay.innerText = myIndex !== -1 ? (myIndex + 1) : "-";
     }, (error) => {
-        if (error.message.includes("index")) {
-            console.error("인덱스 필요: 콘솔 링크 확인");
-        }
+        if (error.message.includes("index")) console.error("인덱스 필요");
     });
 }
 
@@ -195,10 +232,6 @@ function updateOtherUserTime(startTime) {
             startMillis = startTime.toMillis();
         }
         const usedMillis = Date.now() - startMillis;
-        if (usedMillis < 0) {
-            currentUserTimeDisplay.innerText = "입장 중...";
-            return;
-        }
         const mins = Math.floor(usedMillis / 1000 / 60);
         const secs = Math.floor((usedMillis / 1000) % 60);
         currentUserTimeDisplay.innerText = `${mins}분 ${secs}초`;
@@ -209,13 +242,34 @@ async function removeFromQueue() {
     try { await deleteDoc(doc(queueColRef, MY_ID)); } catch (e) { }
 }
 
-function leaveRoom() {
-    if (!confirm("정말 나가시겠습니까?")) return;
+// ==========================================
+// [수정됨] 퇴장 처리 로직
+// ==========================================
+function leaveRoom(askConfirm = true) {
+    if (askConfirm && !confirm("정말 나가시겠습니까?")) return;
+
     amIInside = false;
-    // 나가기 전에 마지막으로 그림 저장 (혹시 모르니)
-    saveCanvasData();
-    updateDoc(roomRef, { occupant: null, expireAt: null, startTime: null });
-    location.reload();
+    // 타이머 해제
+    if (heartbeatInterval) clearInterval(heartbeatInterval);
+
+    saveCanvasData(); // 마지막 저장
+
+    // 방 비우기
+    updateDoc(roomRef, {
+        occupant: null,
+        expireAt: null,
+        startTime: null,
+        lastActive: null
+    }).then(() => {
+        // askConfirm이 false면(시간초과) 경고창 없이 바로 이동
+        if (askConfirm) alert("안녕히 가세요.");
+
+        window.close();
+        history.back();
+        setTimeout(() => { location.reload(); }, 1000);
+    }).catch(() => {
+        location.reload();
+    });
 }
 
 // ==========================================
@@ -232,7 +286,7 @@ async function sendMessage() {
         });
         msgInput.value = "";
         msgLog.scrollTop = msgLog.scrollHeight;
-    } catch (e) { console.error(e); }
+    } catch (e) { }
 }
 
 let unsubscribeMsg = null;
@@ -257,73 +311,44 @@ function subscribeMessages() {
 }
 
 // ==========================================
-// 5. [핵심] 캔버스 저장/로드 기능 추가
+// 5. 캔버스 로직 (유지)
 // ==========================================
 let painting = false;
 
-// 1) 그림 저장하기 (그릴 때마다, 혹은 붓을 뗄 때마다)
 async function saveCanvasData() {
     if (!amIInside) return;
-    // 캔버스를 이미지 데이터(긴 문자열)로 변환
     const dataUrl = canvas.toDataURL("image/png");
-
-    try {
-        // Firestore에 덮어쓰기 (merge: true)
-        await setDoc(canvasRef, { image: dataUrl }, { merge: true });
-        // console.log("그림 저장 완료");
-    } catch (e) {
-        console.error("그림 저장 실패:", e);
-    }
+    try { await setDoc(canvasRef, { image: dataUrl }, { merge: true }); } catch (e) { }
 }
 
-// 2) 그림 불러오기 (입장 시 한 번)
 async function loadCanvasData() {
     try {
         const docSnap = await getDoc(canvasRef);
         if (docSnap.exists() && docSnap.data().image) {
             const img = new Image();
             img.src = docSnap.data().image;
-            img.onload = () => {
-                // 이미지가 로드되면 캔버스에 그리기
-                ctx.drawImage(img, 0, 0);
-            };
-            console.log("이전 흔적을 불러왔습니다.");
+            img.onload = () => { ctx.drawImage(img, 0, 0); };
         }
-    } catch (e) {
-        console.error("그림 불러오기 실패:", e);
-    }
+    } catch (e) { }
 }
 
 function resizeCanvas() {
     const p = canvas.parentElement;
     if (!p) return;
-
-    // 크기 조절 시 그림 유지 로직
     let temp = null;
     if (canvas.width > 0) { try { temp = canvas.toDataURL(); } catch (e) { } }
-
     canvas.width = p.clientWidth;
     canvas.height = p.clientHeight;
-
     if (temp) {
         const img = new Image();
         img.src = temp;
         img.onload = () => ctx.drawImage(img, 0, 0);
     }
-
     ctx.lineWidth = 2; ctx.lineCap = 'round'; ctx.strokeStyle = '#5d4037';
 }
 
 function start(e) { painting = true; draw(e); }
-
-// 붓을 뗄 때(mouseup) 마다 서버에 저장합니다.
-function end() {
-    painting = false;
-    ctx.beginPath();
-    // [중요] 한 획을 그을 때마다 저장 (실시간 공유 느낌)
-    saveCanvasData();
-}
-
+function end() { painting = false; ctx.beginPath(); saveCanvasData(); }
 function draw(e) {
     if (!painting) return;
     ctx.lineWidth = 2; ctx.lineCap = 'round'; ctx.strokeStyle = '#5d4037';
@@ -337,5 +362,4 @@ function draw(e) {
 canvas.addEventListener('mousedown', start);
 canvas.addEventListener('mouseup', end);
 canvas.addEventListener('mousemove', draw);
-// 캔버스를 벗어나면 그림 끊기
 canvas.addEventListener('mouseleave', () => { painting = false; ctx.beginPath(); });
