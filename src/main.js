@@ -17,12 +17,13 @@ import {
 
 // 1. Firebase 설정 (본인의 키값 유지!)
 const firebaseConfig = {
-    apiKey: "API_KEY_입력",
-    authDomain: "PROJECT_ID.firebaseapp.com",
-    projectId: "PROJECT_ID",
-    storageBucket: "PROJECT_ID.appspot.com",
-    messagingSenderId: "SENDER_ID",
-    appId: "APP_ID"
+    apiKey: "AIzaSyAGopha4Zy2S9IHliTlFPEEprIyNFC8bsE",
+    authDomain: "md1websiteproject.firebaseapp.com",
+    projectId: "md1websiteproject",
+    storageBucket: "md1websiteproject.firebasestorage.app",
+    messagingSenderId: "427011802078",
+    appId: "1:427011802078:web:920abac32165c01b62934f",
+    measurementId: "G-CTT7KM6CEF"
 };
 
 const app = initializeApp(firebaseConfig);
