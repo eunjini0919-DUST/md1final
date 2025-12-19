@@ -4,7 +4,6 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <link rel="stylesheet" href="./src/style.css">
     <title>고해소</title>
     <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="./src/style.css" />
@@ -21,12 +20,10 @@
                         현재 고해가 진행 중입니다.<br>
                         침묵 속에 차례를 기다리십시오.
                     </p>
-
                     <div class="queue-info solemn-info">
                         <p>내 대기 순서: <span id="my-rank" class="highlight-gold">-</span> 번째</p>
                         <p>앞사람 소요 시간: <span id="current-user-time" class="highlight-gold">계산 중...</span></p>
                     </div>
-
                     <p id="timer-display" style="display:none; margin-top:15px; font-size: 0.8rem; color: #888;">
                         (최대 대기 가능 시간: <span id="time-left">00:00</span>)
                     </p>
@@ -37,7 +34,14 @@
         <div id="room-screen" class="screen hidden">
             <div class="room-container solemn-room">
                 <header class="room-header solemn-header">
-                    <span class="room-title">고해소 (Confessional)</span>
+                    <div class="header-left">
+                        <span class="room-title">고해소</span>
+                        <div class="tools">
+                            <button id="btn-draw" class="tool-btn active" title="붓">✏️</button>
+                            <button id="btn-erase" class="tool-btn" title="지우개">🧹</button>
+                        </div>
+                    </div>
+
                     <div class="header-controls">
                         <span id="my-timer" class="timer-gold">10:00</span>
                         <button id="leave-btn" class="solemn-btn">떠나기</button>
@@ -52,8 +56,7 @@
                 </div>
 
                 <div class="message-area solemn-message-area">
-                    <div id="msg-log">
-                    </div>
+                    <div id="msg-log"></div>
                     <div class="input-wrapper solemn-input-wrapper">
                         <input type="text" id="msg-input" placeholder="이곳에 참회하십시오... (Enter)" autocomplete="off">
                     </div>
@@ -62,7 +65,6 @@
         </div>
 
     </div>
-
     <script type="module" src="./src/main.js"></script>
 </body>
 

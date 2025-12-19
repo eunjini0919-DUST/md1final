@@ -1,19 +1,11 @@
-import { initializeApp } from "firebase/app";
+// ========================================================
+// [수정됨] 브라우저에서 직접 로드할 수 있는 CDN 주소로 변경
+// ========================================================
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import {
-    getFirestore,
-    doc,
-    onSnapshot,
-    updateDoc,
-    setDoc,
-    deleteDoc,
-    addDoc,
-    getDoc,
-    collection,
-    query,
-    orderBy,
-    limit,
-    serverTimestamp
-} from "firebase/firestore";
+    getFirestore, doc, onSnapshot, updateDoc, setDoc, deleteDoc, addDoc, getDoc,
+    collection, query, orderBy, limit, serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 // ========================================================
 // ▼▼▼ 본인의 Firebase 키값으로 꼭 교체해주세요 ▼▼▼
@@ -41,6 +33,7 @@ let myTimerInterval;
 let heartbeatInterval;
 let otherUserTimerInterval;
 let queueUnsubscribe = null;
+let currentMode = 'draw';
 
 // DOM 요소
 const queueScreen = document.getElementById('queue-screen');
@@ -54,6 +47,9 @@ const ctx = canvas.getContext('2d');
 const msgInput = document.getElementById('msg-input');
 const msgLog = document.getElementById('msg-log');
 const leaveBtn = document.getElementById('leave-btn');
+const btnDraw = document.getElementById('btn-draw');
+const btnErase = document.getElementById('btn-erase');
+
 
 // ==========================================
 // 1. 이벤트 리스너
@@ -63,8 +59,6 @@ msgInput.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') sendMessage();
 });
 window.addEventListener('resize', resizeCanvas);
-
-// 창 닫을 때
 window.addEventListener('beforeunload', () => {
     if (amIInside) {
         saveCanvasData();
@@ -72,6 +66,20 @@ window.addEventListener('beforeunload', () => {
     }
     removeFromQueue();
 });
+
+btnDraw.addEventListener('click', () => setToolMode('draw'));
+btnErase.addEventListener('click', () => setToolMode('erase'));
+
+function setToolMode(mode) {
+    currentMode = mode;
+    if (mode === 'draw') {
+        btnDraw.classList.add('active');
+        btnErase.classList.remove('active');
+    } else {
+        btnErase.classList.add('active');
+        btnDraw.classList.remove('active');
+    }
+}
 
 
 // ==========================================
@@ -86,21 +94,17 @@ onSnapshot(roomRef, (snapshot) => {
         setDoc(roomRef, { occupant: null, expireAt: null, lastActive: null });
         return;
     }
-
     const data = snapshot.data();
     const now = Date.now();
     const expireTimeMillis = data.expireAt ? data.expireAt.toMillis() : 0;
     const lastActiveMillis = data.lastActive ? data.lastActive.toMillis() : now;
 
-    // 상태 체크 (방 비었음 or 시간초과 or 잠수)
     const isRoomEmpty = !data.occupant;
     const isTimeOver = expireTimeMillis < now;
     const isDead = (now - lastActiveMillis) > 10000;
 
     if (isRoomEmpty || isTimeOver || isDead) {
         if (!amIInside) tryEnterRoom();
-
-        // 10분 시간 종료 시 강제 퇴장
         if (amIInside && isTimeOver) {
             alert("허락된 시간이 다 되었습니다. 평안히 돌아가십시오.");
             leaveRoom(false);
@@ -117,9 +121,7 @@ onSnapshot(roomRef, (snapshot) => {
 
 async function tryEnterRoom() {
     const nextExpire = new Date();
-    // [설정] 제한 시간 10분
     nextExpire.setMinutes(nextExpire.getMinutes() + 10);
-
     try {
         await updateDoc(roomRef, {
             occupant: MY_ID,
@@ -129,35 +131,30 @@ async function tryEnterRoom() {
         });
         await removeFromQueue();
         console.log("고해소 입장");
-    } catch (e) {
-        // console.log("입장 경쟁 실패");
-    }
+    } catch (e) { }
 }
 
 
 // ==========================================
 // 3. 화면 모드
 // ==========================================
-
 function enterRoomMode(expireTime) {
     amIInside = true;
     queueScreen.classList.add('hidden');
     roomScreen.classList.remove('hidden');
-
     if (queueUnsubscribe) { queueUnsubscribe(); queueUnsubscribe = null; }
     if (otherUserTimerInterval) clearInterval(otherUserTimerInterval);
 
+    setToolMode('draw');
     resizeCanvas();
     loadCanvasData();
     subscribeMessages();
 
-    // 생존 신호 (3초마다)
     if (heartbeatInterval) clearInterval(heartbeatInterval);
     heartbeatInterval = setInterval(() => {
         updateDoc(roomRef, { lastActive: serverTimestamp() }).catch(e => { });
     }, 3000);
 
-    // 내 타이머
     if (myTimerInterval) clearInterval(myTimerInterval);
     myTimerInterval = setInterval(() => {
         const left = expireTime.toMillis() - Date.now();
@@ -176,18 +173,14 @@ function showQueueMode(roomData) {
     amIInside = false;
     roomScreen.classList.add('hidden');
     queueScreen.classList.remove('hidden');
-
     if (!queueUnsubscribe) {
         const myQueueRef = doc(queueColRef, MY_ID);
         setDoc(myQueueRef, { userId: MY_ID, joinedAt: serverTimestamp() }, { merge: true })
             .then(() => monitorQueue()).catch(e => { });
     }
-
     updateOtherUserTime(roomData.startTime);
-
     if (roomData.expireAt) {
         const leftSec = Math.max(0, (roomData.expireAt.toMillis() - Date.now()) / 1000);
-        // HTML 문구와 일치시킴
         queueMsg.innerHTML = `현재 고해가 진행 중입니다.<br>침묵 속에 차례를 기다리십시오.`;
         timeLeftDisplay.innerText = Math.ceil(leftSec) + "초";
         document.getElementById('timer-display').style.display = 'block';
@@ -226,21 +219,14 @@ async function removeFromQueue() {
     try { await deleteDoc(doc(queueColRef, MY_ID)); } catch (e) { }
 }
 
-// ==========================================
-// [퇴장 처리]
-// ==========================================
 function leaveRoom(askConfirm = true) {
-    // 버튼 클릭 시 묻는 말
     if (askConfirm && !confirm("고해소를 떠나시겠습니까?")) return;
-
     amIInside = false;
     if (heartbeatInterval) clearInterval(heartbeatInterval);
     saveCanvasData();
-
     updateDoc(roomRef, {
         occupant: null, expireAt: null, startTime: null, lastActive: null
     }).then(() => {
-        // 퇴장 완료 인사
         if (askConfirm) alert("당신의 마음에 평화가 깃들기를.");
         window.close();
         history.back();
@@ -275,7 +261,6 @@ function subscribeMessages() {
         msgLog.innerHTML = '';
         const welcome = document.createElement('div');
         welcome.className = 'msg-item system';
-        // 입장 환영 메시지
         welcome.innerText = "이곳은 고해의 공간입니다. 무거운 짐을 내려놓으십시오.";
         msgLog.appendChild(welcome);
         snapshot.forEach((doc) => {
@@ -290,7 +275,7 @@ function subscribeMessages() {
 }
 
 // ==========================================
-// 5. 캔버스 로직 (백묵 스타일)
+// 5. 캔버스 로직
 // ==========================================
 let painting = false;
 
@@ -306,7 +291,10 @@ async function loadCanvasData() {
         if (docSnap.exists() && docSnap.data().image) {
             const img = new Image();
             img.src = docSnap.data().image;
-            img.onload = () => { ctx.drawImage(img, 0, 0); };
+            img.onload = () => {
+                ctx.globalCompositeOperation = 'source-over';
+                ctx.drawImage(img, 0, 0);
+            };
         }
     } catch (e) { }
 }
@@ -321,25 +309,38 @@ function resizeCanvas() {
     if (temp) {
         const img = new Image();
         img.src = temp;
-        img.onload = () => ctx.drawImage(img, 0, 0);
+        img.onload = () => {
+            ctx.globalCompositeOperation = 'source-over';
+            ctx.drawImage(img, 0, 0);
+        };
     }
-    // 펜 기본 스타일 (백묵)
-    ctx.lineWidth = 2;
     ctx.lineCap = 'round';
-    ctx.strokeStyle = 'rgba(220, 220, 220, 0.6)';
 }
 
 function start(e) { painting = true; draw(e); }
-function end() { painting = false; ctx.beginPath(); saveCanvasData(); }
+function end() {
+    painting = false;
+    ctx.beginPath();
+    saveCanvasData();
+}
+
 function draw(e) {
     if (!painting) return;
 
-    // 펜 그리기 스타일 (백묵 질감)
-    ctx.lineWidth = 3;
     ctx.lineCap = 'round';
-    ctx.shadowBlur = 2;
-    ctx.shadowColor = 'rgba(255,255,255,0.3)';
-    ctx.strokeStyle = 'rgba(230, 230, 230, 0.7)';
+
+    if (currentMode === 'draw') {
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.lineWidth = 3;
+        ctx.shadowBlur = 2;
+        ctx.shadowColor = 'rgba(255,255,255,0.3)';
+        ctx.strokeStyle = 'rgba(230, 230, 230, 0.7)';
+    } else {
+        ctx.globalCompositeOperation = 'destination-out';
+        ctx.lineWidth = 20;
+        ctx.shadowBlur = 0;
+        ctx.strokeStyle = 'rgba(0,0,0,1)';
+    }
 
     const r = canvas.getBoundingClientRect();
     ctx.lineTo(e.clientX - r.left, e.clientY - r.top);

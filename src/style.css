@@ -1,17 +1,11 @@
 :root {
     /* 고해소 테마 색상 팔레트 */
     --bg-color: #1a1814;
-    /* 짙은 흑갈색 */
     --card-bg: #2c251d;
-    /* 어두운 나무색 */
     --text-main: #c0b2a0;
-    /* 빛바랜 양피지색 */
     --text-sub: #756b5e;
-    /* 어두운 회색 */
     --accent-gold: #d4af37;
-    /* 성당 금색 */
     --accent-dark: #4a3f35;
-    /* 테두리용 짙은 갈색 */
 }
 
 body,
@@ -22,7 +16,6 @@ html {
     height: 100%;
     font-family: 'Gowun Batang', serif;
     background-color: var(--bg-color);
-    /* 미세한 노이즈 패턴 추가 */
     background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='%230f0d0a' fill-opacity='0.4' fill-rule='evenodd'/%3E%3C/svg%3E");
     color: var(--text-main);
     overflow: hidden;
@@ -118,8 +111,9 @@ h1 {
     border-right: 5px solid var(--accent-dark);
 }
 
+/* 헤더 레이아웃 수정 */
 .solemn-header {
-    padding: 1.5rem;
+    padding: 1rem 1.5rem;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -127,11 +121,54 @@ h1 {
     border-bottom: 2px solid var(--accent-dark);
 }
 
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
 .room-title {
-    font-size: 1.3rem;
+    font-size: 1.2rem;
     font-weight: bold;
     color: var(--accent-gold);
     letter-spacing: 1px;
+}
+
+/* [추가] 도구 버튼 스타일 */
+.tools {
+    display: flex;
+    gap: 5px;
+}
+
+.tool-btn {
+    background: transparent;
+    border: 1px solid var(--accent-dark);
+    color: var(--text-sub);
+    padding: 4px 8px;
+    border-radius: 2px;
+    cursor: pointer;
+    font-size: 1.1rem;
+    transition: all 0.2s;
+}
+
+.tool-btn:hover {
+    color: var(--accent-gold);
+    border-color: var(--accent-gold);
+}
+
+/* 활성화된 도구 버튼 */
+.tool-btn.active {
+    background: rgba(212, 175, 55, 0.1);
+    color: var(--accent-gold);
+    border-color: var(--accent-gold);
+    box-shadow: 0 0 5px rgba(212, 175, 55, 0.2);
+}
+
+
+.header-controls {
+    display: flex;
+    align-items: center;
+    gap: 15px;
 }
 
 .timer-gold {
@@ -144,7 +181,7 @@ h1 {
 .solemn-btn {
     background: transparent;
     border: 1px solid var(--accent-gold);
-    padding: 8px 20px;
+    padding: 6px 15px;
     border-radius: 2px;
     color: var(--accent-gold);
     font-family: inherit;
@@ -163,7 +200,6 @@ h1 {
     flex-grow: 1;
     position: relative;
     background-color: #2a241e;
-    /* 어두운 돌판/나무판 */
     box-shadow: inset 0 0 100px rgba(0, 0, 0, 0.9);
     cursor: crosshair;
     overflow: hidden;
@@ -173,10 +209,10 @@ h1 {
     width: 100%;
     height: 100%;
     display: block;
-    filter: brightness(0.9) contrast(1.1);
+    /* 지우개 사용을 위해 brightness 필터 제거 (색상 왜곡 방지) */
+    /* filter: brightness(0.9) contrast(1.1); */
 }
 
-/* 격자무늬 가림막 효과 */
 .grille-overlay {
     position: absolute;
     top: 0;
