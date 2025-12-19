@@ -37,8 +37,8 @@ const MY_ID = 'guest_' + Math.random().toString(36).substr(2, 9);
 console.log("나의 ID:", MY_ID);
 
 let amIInside = false;
-let myTimerInterval;      // 남은 시간(5분) 카운트다운
-let heartbeatInterval;    // [NEW] 생존 신호 보내기 타이머
+let myTimerInterval;
+let heartbeatInterval;
 let otherUserTimerInterval;
 let queueUnsubscribe = null;
 
@@ -58,18 +58,16 @@ const leaveBtn = document.getElementById('leave-btn');
 // ==========================================
 // 1. 이벤트 리스너
 // ==========================================
-leaveBtn.addEventListener('click', leaveRoom);
+leaveBtn.addEventListener('click', () => leaveRoom(true));
 msgInput.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') sendMessage();
 });
 window.addEventListener('resize', resizeCanvas);
 
-// [중요] 창 닫을 때 최대한 빨리 "나 나감" 처리 시도
+// 창 닫을 때
 window.addEventListener('beforeunload', () => {
     if (amIInside) {
-        // 캔버스 저장 시도 (비동기라 보장되진 않음)
         saveCanvasData();
-        // 방 비우기 (Navigator.sendBeacon 방식이 더 좋지만, Firestore 호환성을 위해 유지)
         updateDoc(roomRef, { occupant: null, expireAt: null, lastActive: null });
     }
     removeFromQueue();
@@ -77,7 +75,7 @@ window.addEventListener('beforeunload', () => {
 
 
 // ==========================================
-// 2. 방 감시 및 입장 로직 (심판)
+// 2. 방 감시 및 입장 로직
 // ==========================================
 const roomRef = doc(db, "world", "room1");
 const queueColRef = collection(db, "world", "room1", "waiting");
@@ -91,31 +89,24 @@ onSnapshot(roomRef, (snapshot) => {
 
     const data = snapshot.data();
     const now = Date.now();
-
-    // 시간 계산
     const expireTimeMillis = data.expireAt ? data.expireAt.toMillis() : 0;
     const lastActiveMillis = data.lastActive ? data.lastActive.toMillis() : now;
 
-    // [핵심 로직 변경]
-    // 1. 방에 사람이 없거나 (occupant == null)
-    // 2. 5분 시간이 다 됐거나 (expireTimeMillis < now)
-    // 3. [NEW] 사람이 있는데 10초 이상 신호가 없거나 (잠수/강제종료)
+    // 상태 체크 (방 비었음 or 시간초과 or 잠수)
     const isRoomEmpty = !data.occupant;
     const isTimeOver = expireTimeMillis < now;
-    const isDead = (now - lastActiveMillis) > 10000; // 10초 딜레이 허용
+    const isDead = (now - lastActiveMillis) > 10000;
 
     if (isRoomEmpty || isTimeOver || isDead) {
-        // 내가 안에 있지 않은 상태라면 입장 시도
         if (!amIInside) tryEnterRoom();
 
-        // 만약 내가 안에 있는데 시간이 다 된 거라면? (5분 컷)
+        // 10분 시간 종료 시 강제 퇴장
         if (amIInside && isTimeOver) {
-            alert("약속된 5분이 지났습니다. 다음 분을 위해 비워주세요.");
-            leaveRoom(false); // confirm 없이 강제 퇴장
+            alert("허락된 시간이 다 되었습니다. 평안히 돌아가십시오.");
+            leaveRoom(false);
         }
     }
     else {
-        // 누군가 정상적으로 사용 중
         if (data.occupant === MY_ID) {
             if (!amIInside) enterRoomMode(data.expireAt);
         } else {
@@ -126,20 +117,20 @@ onSnapshot(roomRef, (snapshot) => {
 
 async function tryEnterRoom() {
     const nextExpire = new Date();
-    nextExpire.setMinutes(nextExpire.getMinutes() + 5); // 5분 제한
+    // [설정] 제한 시간 10분
+    nextExpire.setMinutes(nextExpire.getMinutes() + 10);
 
     try {
         await updateDoc(roomRef, {
             occupant: MY_ID,
             expireAt: nextExpire,
             startTime: serverTimestamp(),
-            lastActive: serverTimestamp() // [NEW] 입장 시 생존신호 시작
+            lastActive: serverTimestamp()
         });
         await removeFromQueue();
-        console.log("방 입장 성공!");
+        console.log("고해소 입장");
     } catch (e) {
-        // 동시 접속 시도 실패는 자연스러운 현상이므로 로그만 남김
-        // console.log("입장 경쟁:", e);
+        // console.log("입장 경쟁 실패");
     }
 }
 
@@ -160,21 +151,17 @@ function enterRoomMode(expireTime) {
     loadCanvasData();
     subscribeMessages();
 
-    // [NEW] 생존 신호 보내기 (3초마다)
-    // 창을 닫으면 이 인터벌이 멈추므로, 10초 뒤 lastActive가 갱신되지 않아 쫓겨남
+    // 생존 신호 (3초마다)
     if (heartbeatInterval) clearInterval(heartbeatInterval);
     heartbeatInterval = setInterval(() => {
-        updateDoc(roomRef, { lastActive: serverTimestamp() }).catch(e => {
-            console.log("신호 전송 실패(아마 쫓겨남)");
-        });
+        updateDoc(roomRef, { lastActive: serverTimestamp() }).catch(e => { });
     }, 3000);
 
-    // 내 화면 타이머 (보여주기용)
+    // 내 타이머
     if (myTimerInterval) clearInterval(myTimerInterval);
     myTimerInterval = setInterval(() => {
         const left = expireTime.toMillis() - Date.now();
         if (left <= 0) {
-            // 여기서 처리 안 해도 onSnapshot에서 처리하지만, UX를 위해 유지
             document.getElementById('my-timer').innerText = "00:00";
         } else {
             const minutes = Math.floor(left / 1000 / 60);
@@ -192,22 +179,21 @@ function showQueueMode(roomData) {
 
     if (!queueUnsubscribe) {
         const myQueueRef = doc(queueColRef, MY_ID);
-        setDoc(myQueueRef, {
-            userId: MY_ID,
-            joinedAt: serverTimestamp()
-        }, { merge: true }).then(() => monitorQueue()).catch(e => { });
+        setDoc(myQueueRef, { userId: MY_ID, joinedAt: serverTimestamp() }, { merge: true })
+            .then(() => monitorQueue()).catch(e => { });
     }
 
     updateOtherUserTime(roomData.startTime);
 
     if (roomData.expireAt) {
         const leftSec = Math.max(0, (roomData.expireAt.toMillis() - Date.now()) / 1000);
+        // HTML 문구와 일치시킴
+        queueMsg.innerHTML = `현재 고해가 진행 중입니다.<br>침묵 속에 차례를 기다리십시오.`;
         timeLeftDisplay.innerText = Math.ceil(leftSec) + "초";
         document.getElementById('timer-display').style.display = 'block';
     }
 }
 
-// 대기열 로직
 function monitorQueue() {
     const q = query(queueColRef, orderBy("joinedAt", "asc"));
     queueUnsubscribe = onSnapshot(q, (snapshot) => {
@@ -215,8 +201,6 @@ function monitorQueue() {
         snapshot.forEach((doc) => waitingList.push(doc.id));
         const myIndex = waitingList.indexOf(MY_ID);
         myRankDisplay.innerText = myIndex !== -1 ? (myIndex + 1) : "-";
-    }, (error) => {
-        if (error.message.includes("index")) console.error("인덱스 필요");
     });
 }
 
@@ -243,27 +227,21 @@ async function removeFromQueue() {
 }
 
 // ==========================================
-// [수정됨] 퇴장 처리 로직
+// [퇴장 처리]
 // ==========================================
 function leaveRoom(askConfirm = true) {
-    if (askConfirm && !confirm("정말 나가시겠습니까?")) return;
+    // 버튼 클릭 시 묻는 말
+    if (askConfirm && !confirm("고해소를 떠나시겠습니까?")) return;
 
     amIInside = false;
-    // 타이머 해제
     if (heartbeatInterval) clearInterval(heartbeatInterval);
+    saveCanvasData();
 
-    saveCanvasData(); // 마지막 저장
-
-    // 방 비우기
     updateDoc(roomRef, {
-        occupant: null,
-        expireAt: null,
-        startTime: null,
-        lastActive: null
+        occupant: null, expireAt: null, startTime: null, lastActive: null
     }).then(() => {
-        // askConfirm이 false면(시간초과) 경고창 없이 바로 이동
-        if (askConfirm) alert("안녕히 가세요.");
-
+        // 퇴장 완료 인사
+        if (askConfirm) alert("당신의 마음에 평화가 깃들기를.");
         window.close();
         history.back();
         setTimeout(() => { location.reload(); }, 1000);
@@ -273,7 +251,7 @@ function leaveRoom(askConfirm = true) {
 }
 
 // ==========================================
-// 4. 메시지 기능 (유지)
+// 4. 메시지 기능
 // ==========================================
 async function sendMessage() {
     const text = msgInput.value.trim();
@@ -297,7 +275,8 @@ function subscribeMessages() {
         msgLog.innerHTML = '';
         const welcome = document.createElement('div');
         welcome.className = 'msg-item system';
-        welcome.innerText = "따뜻한 차 한 잔 마시며 쉬어가세요.";
+        // 입장 환영 메시지
+        welcome.innerText = "이곳은 고해의 공간입니다. 무거운 짐을 내려놓으십시오.";
         msgLog.appendChild(welcome);
         snapshot.forEach((doc) => {
             const d = doc.data();
@@ -311,7 +290,7 @@ function subscribeMessages() {
 }
 
 // ==========================================
-// 5. 캔버스 로직 (유지)
+// 5. 캔버스 로직 (백묵 스타일)
 // ==========================================
 let painting = false;
 
@@ -344,14 +323,24 @@ function resizeCanvas() {
         img.src = temp;
         img.onload = () => ctx.drawImage(img, 0, 0);
     }
-    ctx.lineWidth = 2; ctx.lineCap = 'round'; ctx.strokeStyle = '#5d4037';
+    // 펜 기본 스타일 (백묵)
+    ctx.lineWidth = 2;
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = 'rgba(220, 220, 220, 0.6)';
 }
 
 function start(e) { painting = true; draw(e); }
 function end() { painting = false; ctx.beginPath(); saveCanvasData(); }
 function draw(e) {
     if (!painting) return;
-    ctx.lineWidth = 2; ctx.lineCap = 'round'; ctx.strokeStyle = '#5d4037';
+
+    // 펜 그리기 스타일 (백묵 질감)
+    ctx.lineWidth = 3;
+    ctx.lineCap = 'round';
+    ctx.shadowBlur = 2;
+    ctx.shadowColor = 'rgba(255,255,255,0.3)';
+    ctx.strokeStyle = 'rgba(230, 230, 230, 0.7)';
+
     const r = canvas.getBoundingClientRect();
     ctx.lineTo(e.clientX - r.left, e.clientY - r.top);
     ctx.stroke();

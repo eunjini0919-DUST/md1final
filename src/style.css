@@ -1,19 +1,17 @@
 :root {
-    /* 따뜻한 색상 팔레트 */
-    --bg-color: #FDFBF7;
-    /* 웜 화이트 (종이색) */
-    --card-bg: #FFF;
-    /* 카드 배경 */
-    --text-main: #4A4A4A;
-    /* 부드러운 검정 */
-    --text-sub: #8D8D8D;
-    /* 회색 */
-    --accent-color: #A67B5B;
-    /* 나무색/커피색 */
-    --accent-light: #E8DCCF;
-    /* 연한 베이지 */
-    --shadow: 0 4px 20px rgba(166, 123, 91, 0.15);
-    /* 따뜻한 그림자 */
+    /* 고해소 테마 색상 팔레트 */
+    --bg-color: #1a1814;
+    /* 짙은 흑갈색 */
+    --card-bg: #2c251d;
+    /* 어두운 나무색 */
+    --text-main: #c0b2a0;
+    /* 빛바랜 양피지색 */
+    --text-sub: #756b5e;
+    /* 어두운 회색 */
+    --accent-gold: #d4af37;
+    /* 성당 금색 */
+    --accent-dark: #4a3f35;
+    /* 테두리용 짙은 갈색 */
 }
 
 body,
@@ -23,8 +21,9 @@ html {
     width: 100%;
     height: 100%;
     font-family: 'Gowun Batang', serif;
-    /* 고운바탕체 적용 */
     background-color: var(--bg-color);
+    /* 미세한 노이즈 패턴 추가 */
+    background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='%230f0d0a' fill-opacity='0.4' fill-rule='evenodd'/%3E%3C/svg%3E");
     color: var(--text-main);
     overflow: hidden;
 }
@@ -37,7 +36,6 @@ html {
     align-items: center;
 }
 
-/* 화면 전환 효과 */
 .screen {
     width: 100%;
     height: 100%;
@@ -46,9 +44,8 @@ html {
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    transition: opacity 0.8s ease-in-out;
-    /* 천천히 페이드 */
-    background-color: var(--bg-color);
+    transition: opacity 1.2s ease-in-out;
+    background-color: rgba(26, 24, 20, 0.95);
 }
 
 .hidden {
@@ -57,117 +54,163 @@ html {
     z-index: -1;
 }
 
-/* 1. 대기 화면 스타일 */
-.card {
+/* --- 대기 화면 --- */
+.solemn-card {
     background: var(--card-bg);
     padding: 3rem;
-    border-radius: 20px;
-    box-shadow: var(--shadow);
+    border-radius: 4px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
     text-align: center;
-    border: 1px solid var(--accent-light);
+    border: 2px solid var(--accent-dark);
     max-width: 400px;
     width: 80%;
+    position: relative;
+}
+
+.solemn-card::before {
+    content: '☩';
+    display: block;
+    font-size: 2rem;
+    color: var(--accent-dark);
+    margin-bottom: 1rem;
+    opacity: 0.5;
 }
 
 h1 {
     font-weight: 700;
-    color: var(--accent-color);
+    color: var(--accent-gold);
     margin-bottom: 1.5rem;
     font-size: 1.8rem;
+    letter-spacing: 2px;
 }
 
-.gentle-text {
+.solemn-text {
     font-size: 1.1rem;
-    line-height: 1.6;
+    line-height: 1.8;
     color: var(--text-main);
 }
 
-.highlight {
-    font-weight: bold;
-    color: var(--accent-color);
-    font-size: 1.2rem;
+.solemn-info {
+    margin-top: 25px;
+    border-top: 1px solid var(--accent-dark);
+    padding-top: 15px;
+    text-align: left;
+    font-size: 0.95rem;
+    color: var(--text-sub);
 }
 
-/* 2. 방(Room) 스타일 */
-.room-container {
+.highlight-gold {
+    font-weight: bold;
+    color: var(--accent-gold);
+    font-size: 1.1rem;
+}
+
+/* --- 고해소 내부 (Room) --- */
+.solemn-room {
     width: 100%;
     height: 100%;
     max-width: 600px;
-    /* 모바일/태블릿 적화 */
     display: flex;
     flex-direction: column;
     background: var(--card-bg);
-    box-shadow: 0 0 40px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 0 50px rgba(0, 0, 0, 0.8);
+    border-left: 5px solid var(--accent-dark);
+    border-right: 5px solid var(--accent-dark);
 }
 
-.room-header {
+.solemn-header {
     padding: 1.5rem;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-bottom: 1px dashed var(--accent-light);
+    background-color: #221d17;
+    border-bottom: 2px solid var(--accent-dark);
 }
 
 .room-title {
-    font-size: 1.2rem;
+    font-size: 1.3rem;
     font-weight: bold;
-    color: var(--accent-color);
+    color: var(--accent-gold);
+    letter-spacing: 1px;
 }
 
-.header-controls {
-    display: flex;
-    align-items: center;
-    gap: 15px;
+.timer-gold {
+    color: var(--accent-gold);
     font-variant-numeric: tabular-nums;
-    /* 숫자 간격 일정하게 */
+    font-weight: bold;
+    font-size: 1.1rem;
 }
 
-.soft-btn {
-    background: var(--accent-light);
-    border: none;
-    padding: 8px 16px;
-    border-radius: 20px;
-    color: var(--accent-color);
+.solemn-btn {
+    background: transparent;
+    border: 1px solid var(--accent-gold);
+    padding: 8px 20px;
+    border-radius: 2px;
+    color: var(--accent-gold);
     font-family: inherit;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all 0.3s;
+    font-size: 0.9rem;
 }
 
-.soft-btn:hover {
-    background: var(--accent-color);
-    color: #fff;
+.solemn-btn:hover {
+    background: rgba(212, 175, 55, 0.1);
+    box-shadow: 0 0 15px rgba(212, 175, 55, 0.2);
 }
 
-/* 캔버스 영역 */
-.canvas-wrapper {
+/* --- 캔버스 & 가림막 영역 --- */
+.solemn-canvas-wrapper {
     flex-grow: 1;
     position: relative;
-    background-color: #fff;
-    /* 종이 질감 이미지나 패턴을 넣어도 좋습니다 */
-    cursor: url('data:image/svg+xml;utf8,<svg ...>...연필아이콘...</svg>'), auto;
+    background-color: #2a241e;
+    /* 어두운 돌판/나무판 */
+    box-shadow: inset 0 0 100px rgba(0, 0, 0, 0.9);
+    cursor: crosshair;
+    overflow: hidden;
 }
 
 #drawing-board {
     width: 100%;
     height: 100%;
     display: block;
+    filter: brightness(0.9) contrast(1.1);
 }
 
-.guide-text {
+/* 격자무늬 가림막 효과 */
+.grille-overlay {
     position: absolute;
-    bottom: 10px;
+    top: 0;
+    left: 0;
     width: 100%;
-    text-align: center;
-    color: var(--accent-light);
-    font-size: 0.9rem;
+    height: 100%;
     pointer-events: none;
+    background-image: repeating-linear-gradient(0deg, transparent, transparent 20px, rgba(0, 0, 0, 0.4) 20px, rgba(0, 0, 0, 0.4) 22px), repeating-linear-gradient(90deg, transparent, transparent 20px, rgba(0, 0, 0, 0.4) 20px, rgba(0, 0, 0, 0.4) 22px);
+    opacity: 0.3;
+    z-index: 5;
 }
 
-/* 메시지 영역 */
-.message-area {
-    height: 180px;
-    background: #fafafa;
-    border-top: 1px dashed var(--accent-light);
+.solemn-guide {
+    position: absolute;
+    bottom: 15px;
+    width: 90%;
+    left: 50%;
+    transform: translateX(-50%);
+    text-align: center;
+    color: var(--text-sub);
+    font-size: 0.8rem;
+    line-height: 1.4;
+    pointer-events: none;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+    font-style: italic;
+    z-index: 10;
+    opacity: 0.8;
+}
+
+/* --- 메시지 영역 --- */
+.solemn-message-area {
+    height: 200px;
+    background: #221d17;
+    border-top: 2px solid var(--accent-dark);
     display: flex;
     flex-direction: column;
 }
@@ -177,49 +220,57 @@ h1 {
     padding: 1rem;
     overflow-y: auto;
     font-size: 0.95rem;
+    scrollbar-width: thin;
+    scrollbar-color: var(--accent-dark) var(--card-bg);
 }
 
 .msg-item {
     margin-bottom: 8px;
     padding: 8px 12px;
-    background: #fff;
-    border-radius: 10px;
-    border: 1px solid #eee;
-    display: inline-block;
-    max-width: 90%;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 2px;
+    border-left: 2px solid var(--accent-dark);
+    display: block;
+    max-width: 95%;
+    color: var(--text-main);
+    word-break: break-all;
 }
 
 .system {
     background: none;
     border: none;
-    color: var(--accent-color);
+    color: var(--accent-gold);
     font-style: italic;
     font-size: 0.9rem;
     text-align: center;
-    display: block;
-    max-width: 100%;
+    opacity: 0.7;
+    border-left: none;
 }
 
-.input-wrapper {
+.solemn-input-wrapper {
     padding: 1rem;
-    background: #fff;
-    border-top: 1px solid #f0f0f0;
+    background: #1f1a15;
+    border-top: 1px solid var(--accent-dark);
 }
 
 #msg-input {
     width: 100%;
-    border: none;
-    background: #f9f9f9;
+    border: 1px solid var(--accent-dark);
+    background: rgba(0, 0, 0, 0.3);
     padding: 12px;
-    border-radius: 8px;
+    border-radius: 2px;
     font-family: inherit;
     font-size: 1rem;
     outline: none;
     color: var(--text-main);
     box-sizing: border-box;
-    /* 패딩 포함 너비 계산 */
 }
 
 #msg-input::placeholder {
-    color: #ccc;
+    color: var(--text-sub);
+    font-style: italic;
+}
+
+#msg-input:focus {
+    border-color: var(--accent-gold);
 }

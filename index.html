@@ -5,7 +5,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <link rel="stylesheet" href="./src/style.css">
-    <title>작은 쉼터</title>
+    <title>고해소</title>
     <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="./src/style.css" />
 </head>
@@ -14,22 +14,20 @@
     <div id="app">
 
         <div id="queue-screen" class="screen">
-            <div class="card">
-                <h1>잠시 멈춤</h1>
+            <div class="card solemn-card">
+                <h1>정화의 시간</h1>
                 <div class="status-box">
-                    <p id="queue-msg" class="gentle-text">
-                        안에 누군가 머물고 있어요.<br>
-                        조금만 기다리면 문이 열립니다.
+                    <p id="queue-msg" class="solemn-text">
+                        현재 고해가 진행 중입니다.<br>
+                        침묵 속에 차례를 기다리십시오.
                     </p>
 
-                    <div class="queue-info"
-                        style="margin-top: 25px; border-top: 1px dashed #ddd; padding-top: 15px; text-align: left; font-size: 0.95rem;">
-                        <p style="margin: 5px 0;">📋 내 대기 순서: <span id="my-rank" class="highlight">-</span> 번째</p>
-                        <p style="margin: 5px 0;">⏳ 앞사람 이용 시간: <span id="current-user-time" class="highlight">계산
-                                중...</span></p>
+                    <div class="queue-info solemn-info">
+                        <p>내 대기 순서: <span id="my-rank" class="highlight-gold">-</span> 번째</p>
+                        <p>앞사람 소요 시간: <span id="current-user-time" class="highlight-gold">계산 중...</span></p>
                     </div>
 
-                    <p id="timer-display" style="display:none; margin-top:15px; font-size: 0.8rem; color: #999;">
+                    <p id="timer-display" style="display:none; margin-top:15px; font-size: 0.8rem; color: #888;">
                         (최대 대기 가능 시간: <span id="time-left">00:00</span>)
                     </p>
                 </div>
@@ -37,27 +35,27 @@
         </div>
 
         <div id="room-screen" class="screen hidden">
-            <div class="room-container">
-                <header class="room-header">
-                    <span class="room-title">나만의 공간</span>
+            <div class="room-container solemn-room">
+                <header class="room-header solemn-header">
+                    <span class="room-title">고해소 (Confessional)</span>
                     <div class="header-controls">
-                        <span id="my-timer">05:00</span>
-                        <button id="leave-btn" class="soft-btn">문 닫고 나가기</button>
+                        <span id="my-timer" class="timer-gold">10:00</span>
+                        <button id="leave-btn" class="solemn-btn">떠나기</button>
                     </div>
                 </header>
 
-                <div class="canvas-wrapper">
+                <div class="canvas-wrapper solemn-canvas-wrapper">
                     <canvas id="drawing-board"></canvas>
-                    <p class="guide-text">이곳은 당신만의 종이입니다. 마음껏 표현하고 가세요.</p>
+                    <div class="grille-overlay"></div>
+                    <p class="guide-text solemn-guide">너희가 누구의 죄든지 용서해 주면 그가 용서를 받을 것이고, 그대로 두면 그대로 남아 있을 것이다.
+                        -요한 복음 20장 23절</p>
                 </div>
 
-                <div class="message-area">
+                <div class="message-area solemn-message-area">
                     <div id="msg-log">
-                        <div class="msg-item system">마음 속에만 담아놓은, 누구에게도 말하지 못했던 일들이 있나요?</div>
                     </div>
-                    <div class="input-wrapper">
-                        <input type="text" id="msg-input" placeholder="다음 사람에게 남길 따뜻한 한마디... (Enter)"
-                            autocomplete="off">
+                    <div class="input-wrapper solemn-input-wrapper">
+                        <input type="text" id="msg-input" placeholder="이곳에 참회하십시오... (Enter)" autocomplete="off">
                     </div>
                 </div>
             </div>
